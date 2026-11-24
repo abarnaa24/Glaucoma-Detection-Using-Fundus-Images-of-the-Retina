@@ -1,0 +1,331 @@
+!pip install matplotlib
+
+import os
+import cv2
+import matplotlib.pyplot as plt  # Import matplotlib for image display
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score
+from skimage.feature import graycomatrix, graycoprops
+from skimage.segmentation import slic
+from skimage.color import label2rgb
+import cv2
+import os
+import matplotlib.pyplot as plt
+
+# Enable inline plotting
+%matplotlib inline
+
+# Function to apply the Gabor filter and display the filtered image
+def apply_gabor_filter(image, ksize, sigma, theta, lambda_, gamma):
+    gabor_kernel = cv2.getGaborKernel(
+        (ksize, ksize), sigma, theta, lambda_, gamma, 0, ktype=cv2.CV_32F
+    )
+    filtered_image = cv2.filter2D(image, cv2.CV_8UC3, gabor_kernel)
+
+    return filtered_image
+
+# Define Gabor filter parameters
+ksize = 31
+sigma = 5
+theta = 1.0
+lambda_ = 10
+gamma = 0.5
+
+# Path to the folder containing glaucoma images
+glaucoma_folder = '/content/drive/MyDrive/Data/Glaucoma'
+
+# Path to the folder containing non-glaucoma images
+non_glaucoma_folder = '/content/drive/MyDrive/Data/Non-Glaucoma'
+
+# List all image files in the glaucoma folder
+glaucoma_files = [f for f in os.listdir(glaucoma_folder) if f.endswith('.jpg')]
+
+# List all image files in the non-glaucoma folder
+non_glaucoma_files = [f for f in os.listdir(non_glaucoma_folder) if f.endswith('.jpg')]
+
+# Loop through the glaucoma images and display them
+for glaucoma_file in glaucoma_files:
+    # Load a glaucoma image
+    image_path = os.path.join(glaucoma_folder, glaucoma_file)
+    image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+
+    # Apply Gabor filter and display the result
+    filtered_image = apply_gabor_filter(image, ksize, sigma, theta, lambda_, gamma)
+
+    # Display the original and filtered images
+    plt.figure(figsize=(8, 8))
+    plt.subplot(121), plt.imshow(image, cmap='gray')
+    plt.title('Glaucoma - Original Image')
+    plt.subplot(122), plt.imshow(filtered_image, cmap='gray')
+    plt.title('Glaucoma - Gabor Filtered Image')
+    plt.show()
+
+# Loop through the non-glaucoma images and display them
+for non_glaucoma_file in non_glaucoma_files:
+    # Load a non-glaucoma image
+    image_path = os.path.join(non_glaucoma_folder, non_glaucoma_file)
+    image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+
+    # Apply Gabor filter and display the result
+    filtered_image = apply_gabor_filter(image, ksize, sigma, theta, lambda_, gamma)
+
+    # Display the original and filtered images
+    plt.figure(figsize=(8, 8))
+    plt.subplot(121), plt.imshow(image, cmap='gray')
+    plt.title('Non-Glaucoma - Original Image')
+    plt.subplot(122), plt.imshow(filtered_image, cmap='hot')
+    plt.title('Non-Glaucoma - Gabor Filtered Image')
+    plt.show()
+import os
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+from skimage.segmentation import slic
+from skimage.color import label2rgb
+
+# Function for superpixel segmentation
+def apply_superpixel_segmentation(image_path, n_segments, compactness):
+    # Load the image
+    image = cv2.imread(image_path)
+
+    # Convert the image to RGB format
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+    # Apply superpixel segmentation
+    segments = slic(image_rgb, n_segments=n_segments, compactness=compactness)
+
+    # Create a superpixel image
+    superpixel_image = label2rgb(segments, image_rgb, kind='avg')
+
+    return superpixel_image
+
+# Path to the folder containing glaucoma images
+glaucoma_folder = '/content/drive/MyDrive/Data/Glaucoma'
+
+# Path to the folder containing non-glaucoma images
+non_glaucoma_folder = '/content/drive/MyDrive/Data/Non-Glaucoma'
+
+# Superpixel segmentation parameters
+n_segments = 100  # Adjust as needed
+compactness = 10  # Adjust as needed
+
+# Process and display glaucoma images
+for image_file in os.listdir(glaucoma_folder):
+    if image_file.endswith('.jpg'):
+        image_path = os.path.join(glaucoma_folder, image_file)
+        segmented_image = apply_superpixel_segmentation(image_path, n_segments, compactness)
+
+        # Display the segmented image
+        plt.figure(figsize=(8, 8))
+        plt.imshow(segmented_image)
+        plt.title('Glaucoma Image')
+        plt.axis('off')
+        plt.show()
+
+# Process and display non-glaucoma images
+for image_file in os.listdir(non_glaucoma_folder):
+    if image_file.endswith('.jpg'):
+        image_path = os.path.join(non_glaucoma_folder, image_file)
+        segmented_image = apply_superpixel_segmentation(image_path, n_segments, compactness)
+
+        # Display the segmented image
+        plt.figure(figsize=(8, 8))
+        plt.imshow(segmented_image)
+        plt.title('Non-Glaucoma Image')
+        plt.axis('off')
+        plt.show()
+
+import os
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+from skimage.segmentation import slic
+from skimage.color import label2rgb
+from skimage.feature import graycomatrix, greycoprops
+
+# Function for superpixel segmentation
+def apply_superpixel_segmentation(image_path, n_segments, compactness):
+    # Load the image
+    image = cv2.imread(image_path)
+
+    # Convert the image to RGB format
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+    # Apply superpixel segmentation
+    segments = slic(image_rgb, n_segments=n_segments, compactness=compactness)
+
+    # Create a superpixel image
+    superpixel_image = label2rgb(segments, image_rgb, kind='avg')
+
+    return superpixel_image, segments
+
+# Function to extract GLCM features from a superpixel region
+def extract_glcm_features_from_superpixel(image, segments, distances, angles):
+    glcm_features = []
+
+    for segment_id in np.unique(segments):
+        # Create a mask for the current superpixel segment
+        mask = (segments == segment_id)
+
+        # Convert the segment to grayscale
+        segment_gray = cv2.cvtColor((image * mask[:, :, np.newaxis]).astype(np.uint8), cv2.COLOR_RGB2GRAY)
+
+        # Compute GLCM for the superpixel segment
+        glcm = graycomatrix(segment_gray, distances=distances, angles=angles, symmetric=True, normed=True)
+
+        # Calculate GLCM properties
+        contrast = greycoprops(glcm, 'contrast')
+        correlation = greycoprops(glcm, 'correlation')
+        energy = greycoprops(glcm, 'energy')
+        homogeneity = greycoprops(glcm, 'homogeneity')
+
+        # Append GLCM features to the list
+        glcm_features.append(np.concatenate([contrast.ravel(), correlation.ravel(), energy.ravel(), homogeneity.ravel()]))
+
+    return glcm_features
+
+# Path to the folder containing glaucoma images
+glaucoma_folder = '/content/drive/MyDrive/Data/Glaucoma'
+
+# Path to the folder containing non-glaucoma images
+non_glaucoma_folder = '/content/drive/MyDrive/Data/Non-Glaucoma'
+
+# Superpixel segmentation parameters
+n_segments = 100  # Adjust as needed
+compactness = 10  # Adjust as needed
+
+# GLCM parameters
+distances = [1, 2, 3]
+angles = [0, np.pi/4, np.pi/2, 3*np.pi/4]
+
+# Process and display glaucoma images
+for image_file in os.listdir(glaucoma_folder):
+    if image_file.endswith('.jpg'):
+        image_path = os.path.join(glaucoma_folder, image_file)
+        segmented_image, segments = apply_superpixel_segmentation(image_path, n_segments, compactness)
+
+        # Extract GLCM features from superpixel regions
+        glcm_features = extract_glcm_features_from_superpixel(segmented_image, segments, distances, angles)
+
+        # Combine GLCM features for this image
+        combined_features = np.mean(glcm_features, axis=0)
+
+        # Display the segmented image
+        plt.figure(figsize=(8, 8))
+        plt.imshow(segmented_image)
+        plt.title('Glaucoma Image')
+        plt.axis('off')
+        plt.show()
+
+        # Print combined GLCM features for this image
+        print("Combined GLCM Features for", image_file)
+        print(combined_features)
+
+# Process and display non-glaucoma images
+for image_file in os.listdir(non_glaucoma_folder):
+    if image_file.endswith('.jpg'):
+        image_path = os.path.join(non_glaucoma_folder, image_file)
+        segmented_image, segments = apply_superpixel_segmentation(image_path, n_segments, compactness)
+
+        # Extract GLCM features from superpixel regions
+        glcm_features = extract_glcm_features_from_superpixel(segmented_image, segments, distances, angles)
+
+        # Combine GLCM features for this image
+        combined_features = np.mean(glcm_features, axis=0)
+
+        # Display the segmented image
+        plt.figure(figsize=(8, 8))
+        plt.imshow(segmented_image)
+        plt.title('Non-Glaucoma Image')
+        plt.axis('off')
+        plt.show()
+
+        # Print combined GLCM features for this image
+        print("Combined GLCM Features for", image_file)
+        print(combined_features)
+
+from sklearn.ensemble import RandomForestClassifier
+
+# Create a Random Forest Classifier
+classifier = RandomForestClassifier(n_estimators=100, max_depth=10, random_state=42)
+
+# Fit the classifier to your data (X_train, y_train) before getting the parameters
+
+# Get the parameters of the Random Forest Classifier
+params = classifier.get_params()
+
+# Print the parameters
+for param, value in params.items():
+    print(f"{param}: {value}")
+import os
+import cv2
+import numpy as np
+from skimage.segmentation import slic
+from skimage.color import rgb2gray
+from skimage.feature import greycomatrix, greycoprops
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import GaussianNB  # Import GaussianNB
+from sklearn.metrics import accuracy_score
+
+# ... (Previous code for feature extraction)
+
+# Create and train a Gaussian Naive Bayes classifier
+classifier = GaussianNB()
+classifier.fit(X_train, y_train)
+
+# Predict on the test set
+y_pred = classifier.predict(X_test)
+
+# Calculate accuracy
+accuracy = accuracy_score(y_test, y_pred)
+print("Accuracy:", accuracy)
+
+import os
+import cv2
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.dummy import DummyClassifier
+from sklearn.svm import SVC
+from sklearn.metrics import roc_curve, auc
+import matplotlib.pyplot as plt
+
+# Load and preprocess your dataset and perform feature extraction as needed
+# Make sure you have X and y defined for your dataset
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Create a Random Classifier (Dummy Classifier)
+random_classifier = DummyClassifier(strategy="uniform", random_state=42)
+random_classifier.fit(X_train, y_train)
+
+# Create an SVM classifier
+svm_classifier = SVC(probability=True, random_state=42)
+svm_classifier.fit(X_train, y_train)
+
+# Predict probabilities for both classifiers
+y_prob_random = random_classifier.predict_proba(X_test)[:, 1]  # Probability of positive class
+y_prob_svm = svm_classifier.predict_proba(X_test)[:, 1]  # Probability of positive class
+
+# Compute ROC curve and AUC for Random Classifier
+fpr_random, tpr_random, _ = roc_curve(y_test, y_prob_random)
+roc_auc_random = auc(fpr_random, tpr_random)
+
+# Compute ROC curve and AUC for SVM Classifier
+fpr_svm, tpr_svm, _ = roc_curve(y_test, y_prob_svm)
+roc_auc_svm = auc(fpr_svm, tpr_svm)
+
+# Plot ROC curves for both classifiers on the same graph
+plt.figure(figsize=(8, 6))
+plt.plot(fpr_random, tpr_random, color='blue', lw=2, label=f'Random Classifier (AUC = {roc_auc_random:.2f})')
+plt.plot(fpr_svm, tpr_svm, color='red', lw=2, label=f'SVM (AUC = {roc_auc_svm:.2f})')
+plt.plot([0, 1], [0, 1], color='gray', linestyle='--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('ROC Curve Comparison')
+plt.legend(loc='lower right')
+plt.show()
